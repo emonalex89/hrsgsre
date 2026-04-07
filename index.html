@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>🎮 Game + Ads Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    background:#0d0d0d;
+    color:#fff;
+    font-family:sans-serif;
+}
+.box{
+    text-align:center;
+    background:#1a1a1a;
+    padding:25px;
+    border-radius:20px;
+    width:320px;
+}
+button{
+    width:100%;
+    padding:15px;
+    margin:10px 0;
+    border:none;
+    border-radius:12px;
+}
+.start{ background:#00c853; }
+.stop{ background:#d50000; }
+.play{ background:#2196f3; }
+
+#score{ color:#00ffcc; margin-top:10px; }
+#game{ color:#ffaa00; margin-top:10px; }
+#status{ color:#00e5ff; margin-top:10px; }
+</style>
+</head>
+
+<body>
+
+<div class="box">
+<h2>🎮 Game + Ads Pro</h2>
+
+<button onclick="startSystem()" class="start">Start</button>
+<button onclick="stopSystem()" class="stop">Stop</button>
+<button onclick="manualPlay()" class="play">Play Game</button>
+
+<div id="score">Points: 0</div>
+<div id="game">Game: Ready</div>
+<div id="status">Idle</div>
+</div>
+
+<script src="https://libtl.com/sdk.js"
+data-zone="10797418"
+data-sdk="show_10797418"></script>
+
+<script>
+let stopped=false;
+let score=parseInt(localStorage.getItem("score"))||0;
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function setText(id,text){
+    let el=document.getElementById(id);
+    if(el) el.innerText=text;
+}
+
+function update(){
+    setText("score","Points: "+score);
+}
+
+// 🎮 GAME
+async function playGame(time){
+    for(let i=time;i>0;i--){
+        if(stopped || localStorage.getItem("run")!=="1") return;
+
+        setText("game","🎮 Playing... "+i+"s");
+
+        score++;
+        localStorage.setItem("score",score);
+        update();
+
+        await sleep(1000);
+    }
+
+    setText("game","Game done ✔");
+}
+
+// 🎮 MANUAL
+function manualPlay(){
+    let time=Math.floor(Math.random()*5)+10;
+    playGame(time);
+}
+
+// START
+function startSystem(){
+    stopped=false;
+    localStorage.setItem("run","1");
+    runLoop();
+}
+
+// STOP
+function stopSystem(){
+    stopped=true;
+    localStorage.setItem("run","0");
+
+    setText("status","Stopped");
+    setText("game","Game: Stopped");
+
+    window.stop();
+}
+
+// 📺 SHOW AD
+async function showAd(){
+
+    if(typeof window.show_10797418!=="function"){
+        setText("status","Waiting SDK...");
+        return false;
+    }
+
+    try{
+        setText("status","📺 Showing ad...");
+
+        let ad=window.show_10797418();
+        let timeout=sleep(15000);
+
+        await Promise.race([ad,timeout]);
+
+        return true;
+
+    }catch{
+        return false;
+    }
+}
+
+// 🔁 STRONG REDIRECT
+async function forceRedirect(){
+
+    setText("status","🔁 Loading next...");
+    await sleep(1500);
+
+    try{ window.location.replace(window.location.href); }catch(e){}
+
+    setTimeout(()=>{
+        try{ window.location.href = window.location.href; }catch(e){}
+    },1000);
+
+    setTimeout(()=>{
+        try{ location.reload(); }catch(e){}
+    },2000);
+
+    setTimeout(()=>{
+        try{ location.assign(window.location.href); }catch(e){}
+    },3000);
+}
+
+// MAIN LOOP
+async function runLoop(){
+
+    if(stopped || localStorage.getItem("run")!=="1") return;
+
+    let success = await showAd();
+
+    if(stopped) return;
+
+    if(!success){
+        setText("status","Retrying...");
+        await sleep(8000);
+    }
+
+    // ⏱ WAIT
+    let wait=Math.floor(Math.random()*4)+10;
+
+    for(let i=wait;i>0;i--){
+        if(stopped) return;
+        setText("status","Redirect in "+i+"s");
+        await sleep(1000);
+    }
+
+    if(!stopped){
+        forceRedirect();
+    }
+}
+
+// AUTO RESUME
+window.onload=async ()=>{
+    update();
+
+    if(localStorage.getItem("run")==="1"){
+
+        let time=Math.floor(Math.random()*5)+10;
+        await playGame(time);
+
+        if(stopped) return;
+
+        runLoop();
+    }
+};
+</script>
+
+</body>
+</html>
